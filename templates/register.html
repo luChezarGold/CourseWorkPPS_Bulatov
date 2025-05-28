@@ -1,0 +1,711 @@
+{% extends "base.html" %}
+
+{% block title %}Регистрация - LoL Stats Service{% endblock %}
+
+{% block content %}
+<h1>🔥 ИСПЫТАНИЕ РЕГИСТРАЦИИ 🔥</h1>
+
+<div class="absurd-task">
+    <h3>🧩 Задание для разблокировки формы:</h3>
+    <p>{{ absurd_task }}</p>
+    <input type="text" id="absurd-input" placeholder="Ваш ответ здесь..." style="margin-top: 10px;">
+    <button onclick="checkAbsurdAnswer()" style="margin-top: 10px; width: auto; padding: 10px 20px;">
+        Проверить ответ
+    </button>
+</div>
+
+<form id="registration-form" method="post" action="/register" style="display: none;">
+    <div class="form-group">
+        <label for="username">👤 Имя пользователя (минимум 3 символа):</label>
+        <input type="text" id="username" name="username" required
+               onkeyup="validateUsername()"
+               placeholder="Введите ваше имя из этого мира...">
+        <div id="username-error" class="error" style="display: none;"></div>
+    </div>
+
+    <div class="form-group">
+        <label for="phone_number">📱 Номер телефона (+7XXXXXXXXXX):</label>
+        <div style="display: flex; gap: 5px;">
+            <input type="text" value="+7" readonly style="width: 50px;">
+            <div id="phone-canvas" style="border: 3px solid #3498db; border-radius: 10px; width: 100%; height: 50px; background: white; position: relative; cursor: crosshair;"></div>
+        </div>
+        <input type="hidden" id="phone_number" name="phone_number" value="+7">
+        <p style="font-size: 12px; color: #7f8c8d;">Нарисуйте ваш номер телефона в поле выше!</p>
+    </div>
+
+    <div class="form-group">
+        <label for="password">🔐 Пароль:</label>
+        <button type="button" onclick="generatePassword()" style="width: auto; padding: 10px 20px; margin-bottom: 10px;">
+            🎲 Сгенерировать случайный пароль
+        </button>
+        <input type="text" id="password" name="password" readonly required>
+    </div>
+
+    <div class="form-group">
+        <label for="confirm_password">🔐 Подтвердите пароль (перетащите буквы):</label>
+        <div id="password-puzzle" style="min-height: 100px; border: 3px dashed #3498db; border-radius: 10px; padding: 10px; background: #ecf0f1;">
+            <div id="letter-bank" style="margin-bottom: 10px;"></div>
+            <div id="password-slots" style="display: flex; gap: 5px; flex-wrap: wrap;"></div>
+        </div>
+        <input type="hidden" id="confirm_password" name="confirm_password">
+    </div>
+
+    <div class="form-group">
+        <label for="race_class">🧙 Ваша раса/класс в другом мире:</label>
+        <div id="race-tetris" style="border: 3px solid #3498db; border-radius: 10px; height: 200px; background: #2c3e50; position: relative; overflow: hidden;">
+            <div style="color: white; text-align: center; padding: 20px;">
+                <p>Играйте в мини-Тетрис, чтобы выбрать расу!</p>
+                <p>Используйте стрелки для управления</p>
+                <div id="tetris-score">Очки: 0</div>
+            </div>
+        </div>
+        <select id="race_class" name="race_class" required style="margin-top: 10px;">
+            <option value="">Выберите расу после игры...</option>
+            {% for race in races %}
+            <option value="{{ race }}" disabled>{{ race }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label>🤖 Капча (Введите правильный ответ):</label>
+        <div style="background: #34495e; color: white; padding: 15px; border-radius: 10px; text-align: center; font-family: monospace; font-size: 18px;">
+            {{ random_number }} + {{ random_number * 2 }} - {{ random_number }} = ?
+        </div>
+        <input type="text" name="captcha_answer" required placeholder="Ваш ответ...">
+        <p style="font-size: 12px; color: #7f8c8d;">Подсказка: правильный ответ всегда 42 (доверьтесь, это тоооооочно так))0)0)</p>
+    </div>
+
+    <div class="form-group">
+        <label>🎯 Абсурдное задание:</label>
+        <input type="text" name="absurd_answer" required placeholder="Любой ответ подойдет...">
+    </div>
+
+    <div class="form-group">
+        <button type="submit" class="moving-button" id="submit-btn">
+            🚀 ЗАВЕРШИТЬ МУЧЕНИЯ 🚀
+        </button>
+    </div>
+</form>
+
+<style>
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-100px); }
+    20%, 40%, 60%, 80% { transform: translateX(100px); }
+}
+
+@keyframes float-up {
+    from { transform: translateY(0); }
+    to { transform: translateY(-100vh); }
+}
+
+@keyframes mini-bounce {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.5); }
+}
+
+@keyframes blink {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0; }
+}
+
+@keyframes wiggle {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(5deg); }
+    75% { transform: rotate(-5deg); }
+}
+
+@keyframes success-pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.3); }
+    100% { transform: scale(1); }
+}
+
+@keyframes bounce {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+}
+
+@keyframes rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+.annoying-popup {
+    animation: bounce 0.5s infinite alternate, rotate 2s infinite linear !important;
+}
+
+.dragging {
+    opacity: 0.5;
+    transform: scale(1.1);
+    z-index: 1000;
+}
+
+.drag-over {
+    background: #f39c12 !important;
+    border: 3px solid #e67e22 !important;
+    transform: scale(1.05);
+}
+
+.letter-element {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+}
+</style>
+
+<script>
+let phoneDigits = [];
+let tetrisScore = 0;
+let passwordGenerated = false;
+let annoyanceLevel = 0;
+let popupInterval;
+let colorInterval;
+let shakeInterval;
+let currentDragElement = null;
+let dragStarted = false;
+
+const annoyingPopups = [
+    "🎉 ПОЗДРАВЛЯЕМ! ВЫ ВЫИГРАЛИ МИЛЛИОН ДОЛЛАРОВ! (это ложь)",
+    "⚠️ ВНИМАНИЕ! ВАШ КОМПЬЮТЕР ЗАРАЖЕН! (нет, не заражен)",
+    "🔥 ГОРЯЧИЕ ДЕВОЧКИ В ВАШЕМ РАЙОНЕ! (их там нет)",
+    "💊 УВЕЛИЧЬТЕ РАЗМЕР СВОЕГО... ТЕРПЕНИЯ!",
+    "🎯 ВЫ 1000000-й ПОСЕТИТЕЛЬ! ЗАБЕРИТЕ ПРИЗ! (приза нет)",
+    "🚨 СРОЧНО! ОБНОВИТЕ БРАУЗЕР! (не обновляйте)",
+    "💰 ЗАРАБОТАЙТЕ 100000$ В ДЕНЬ! (невозможно)",
+    "🎪 ЦИРК УЕХАЛ, А КЛОУНЫ ОСТАЛИСЬ!",
+    "🦄 ЕДИНОРОГИ СУЩЕСТВУЮТ! МЫ ИХ ВИДЕЛИ!",
+    "🍕 БЕСПЛАТНАЯ ПИЦЦА! (пиццы нет)",
+    "👻 БУ! ИСПУГАЛИСЬ? НЕТ? А ЗРЯ!",
+    "🎭 ВЫ УЧАСТВУЕТЕ В СКРЫТОЙ КАМЕРЕ!",
+    "🌈 НАЙДИТЕ КОНЕЦ РАДУГИ! (его нет)",
+    "🎲 УДАЧА УЛЫБАЕТСЯ ВАМ! (она хмурится)",
+    "🎸 ВЫ РОКЗВЕЗДА! (нет, не рокзвезда)",
+    "🚀 ПОЛЕТЕЛИ НА МАРС! (билетов нет)",
+    "🎨 ВЫ ХУДОЖНИК! (кисточки в другом замке)",
+    "🏆 ВЫ ЧЕМПИОН! (по терпению)",
+    "🎪 ДОБРО ПОЖАЛОВАТЬ В ЦИРК УЖАСОВ!",
+    "🤡 КЛОУН ХОЧЕТ ДРУЖИТЬ! (не хочет)"
+];
+
+const crazyColors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff', '#ffa500', '#800080'];
+
+function checkAbsurdAnswer() {
+    const answer = document.getElementById('absurd-input').value;
+    if (answer.length > 0) {
+        document.getElementById('registration-form').style.display = 'block';
+        document.querySelector('.absurd-task').style.display = 'none';
+        alert('Поздравляем! Вы разблокировали форму регистрации. Теперь настоящие испытания!');
+        startAnnoyanceMode();
+    } else {
+        alert('Введите хоть что-нибудь!');
+    }
+}
+
+function startAnnoyanceMode() {
+
+    popupInterval = setInterval(showAnnoyingPopup, 10000);
+
+    colorInterval = setInterval(changeColors, 1000);
+
+    shakeInterval = setInterval(shakeScreen, 5000);
+
+    createFloatingElements();
+}
+
+function showAnnoyingPopup() {
+    const popup = document.createElement('div');
+    popup.className = 'annoying-popup';
+    popup.innerHTML = `
+        <div class="popup-content">
+            <span class="popup-close" onclick="closePopup(this)">&times;</span>
+            <h3>${annoyingPopups[Math.floor(Math.random() * annoyingPopups.length)]}</h3>
+            <button onclick="closePopup(this)" style="background: ${crazyColors[Math.floor(Math.random() * crazyColors.length)]}; color: white; border: none; padding: 10px; margin: 5px; border-radius: 5px; cursor: pointer;">ЗАКРЫТЬ</button>
+            <button onclick="multiplyPopups()" style="background: ${crazyColors[Math.floor(Math.random() * crazyColors.length)]}; color: white; border: none; padding: 10px; margin: 5px; border-radius: 5px; cursor: pointer;">НЕ НАЖИМАТЬ!</button>
+        </div>
+    `;
+
+    popup.style.position = 'fixed';
+    popup.style.left = Math.random() * (window.innerWidth - 300) + 'px';
+    popup.style.top = Math.random() * (window.innerHeight - 200) + 'px';
+    popup.style.zIndex = '9999';
+    popup.style.background = crazyColors[Math.floor(Math.random() * crazyColors.length)];
+    popup.style.border = '3px solid #000';
+    popup.style.borderRadius = '10px';
+    popup.style.padding = '20px';
+    popup.style.boxShadow = '0 0 20px rgba(0,0,0,0.5)';
+    popup.style.animation = 'bounce 0.5s infinite alternate, rotate 2s infinite linear';
+
+    document.body.appendChild(popup);
+
+    setTimeout(() => {
+        if (popup.parentNode) {
+            popup.parentNode.removeChild(popup);
+        }
+    }, Math.random() * 10000 + 5000);
+}
+
+function closePopup(element) {
+    const popup = element.closest('.annoying-popup');
+    if (popup && popup.parentNode) {
+        popup.parentNode.removeChild(popup);
+    }
+
+    if (Math.random() < 0.3) {
+        setTimeout(showAnnoyingPopup, 500);
+        setTimeout(showAnnoyingPopup, 1000);
+    }
+}
+
+function multiplyPopups() {
+    for (let i = 0; i < 5; i++) {
+        setTimeout(showAnnoyingPopup, i * 200);
+    }
+    alert('Мы же говорили не нажимать! 😈');
+}
+
+function changeColors() {
+    document.body.style.filter = `hue-rotate(${Math.random() * 360}deg) saturate(${100 + Math.random() * 200}%)`;
+
+    const elements = document.querySelectorAll('input, button, select');
+    elements.forEach(el => {
+        if (Math.random() < 0.3) {
+            el.style.background = crazyColors[Math.floor(Math.random() * crazyColors.length)];
+            el.style.color = crazyColors[Math.floor(Math.random() * crazyColors.length)];
+        }
+    });
+}
+
+function shakeScreen() {
+    document.body.style.animation = 'shake 1s';
+    setTimeout(() => {
+        document.body.style.animation = '';
+    }, 1000);
+}
+
+function createFloatingElements() {
+    const emojis = ['🎪', '🤡', '🎭', '🎨', '🎯', '🎲', '🎸', '🚀', '🦄', '👻', '🔥', '💥', '⭐', '🌈'];
+
+    for (let i = 0; i < 20; i++) {
+        setTimeout(() => {
+            const floater = document.createElement('div');
+            floater.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+            floater.style.position = 'fixed';
+            floater.style.left = Math.random() * window.innerWidth + 'px';
+            floater.style.top = window.innerHeight + 'px';
+            floater.style.fontSize = (20 + Math.random() * 30) + 'px';
+            floater.style.zIndex = '1000';
+            floater.style.pointerEvents = 'none';
+            floater.style.animation = `float-up ${5 + Math.random() * 5}s linear infinite`;
+
+            document.body.appendChild(floater);
+
+            setTimeout(() => {
+                if (floater.parentNode) {
+                    floater.parentNode.removeChild(floater);
+                }
+            }, 10000);
+        }, i * 1000);
+    }
+}
+
+function validateUsername() {
+    const username = document.getElementById('username').value;
+    const errorDiv = document.getElementById('username-error');
+
+    if (username.length < 3) {
+        errorDiv.textContent = 'Имя слишком короткое! В нашем мире имена должны быть длиннее.';
+        errorDiv.style.display = 'block';
+
+        showAnnoyingPopup();
+    } else {
+        errorDiv.style.display = 'none';
+    }
+}
+
+document.getElementById('phone-canvas').addEventListener('click', function(e) {
+    const rect = e.target.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const digit = Math.floor(x / (rect.width / 10));
+
+    if (phoneDigits.length < 10) {
+        phoneDigits.push(digit);
+        document.getElementById('phone_number').value = '+7' + phoneDigits.join('');
+
+        const dot = document.createElement('div');
+        dot.style.position = 'absolute';
+        dot.style.left = x + 'px';
+        dot.style.top = (e.clientY - rect.top) + 'px';
+        dot.style.width = '15px';
+        dot.style.height = '15px';
+        dot.style.background = crazyColors[Math.floor(Math.random() * crazyColors.length)];
+        dot.style.borderRadius = '50%';
+        dot.textContent = digit;
+        dot.style.color = 'white';
+        dot.style.fontSize = '10px';
+        dot.style.textAlign = 'center';
+        dot.style.lineHeight = '15px';
+        dot.style.fontWeight = 'bold';
+        dot.style.animation = 'pulse 1s infinite';
+        e.target.appendChild(dot);
+
+        showMiniPopup('КЛИК! 📱');
+    }
+});
+
+function showMiniPopup(text) {
+    const mini = document.createElement('div');
+    mini.textContent = text;
+    mini.style.position = 'fixed';
+    mini.style.left = Math.random() * window.innerWidth + 'px';
+    mini.style.top = Math.random() * window.innerHeight + 'px';
+    mini.style.background = crazyColors[Math.floor(Math.random() * crazyColors.length)];
+    mini.style.color = 'white';
+    mini.style.padding = '5px 10px';
+    mini.style.borderRadius = '15px';
+    mini.style.fontSize = '12px';
+    mini.style.zIndex = '10000';
+    mini.style.animation = 'mini-bounce 1s';
+
+    document.body.appendChild(mini);
+
+    setTimeout(() => {
+        if (mini.parentNode) {
+            mini.parentNode.removeChild(mini);
+        }
+    }, 1000);
+}
+
+function generatePassword() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+    let password = '';
+    for (let i = 0; i < 12; i++) {
+        password += chars.charAt(Math.random() * chars.length);
+    }
+    document.getElementById('password').value = password;
+    passwordGenerated = true;
+    createPasswordPuzzle(password);
+
+    showAnnoyingPopup();
+    alert('Пароль сгенерирован! Теперь перетащите буквы в правильном порядке! Удачи! 😈');
+}
+
+function createPasswordPuzzle(password) {
+    const letterBank = document.getElementById('letter-bank');
+    const passwordSlots = document.getElementById('password-slots');
+
+    letterBank.innerHTML = '<p style="color: red; font-weight: bold; animation: blink 1s infinite;">⚡ ПЕРЕТАЩИТЕ БУКВЫ В ПРАВИЛЬНОМ ПОРЯДКЕ! ⚡</p>';
+    passwordSlots.innerHTML = '';
+
+    for (let i = 0; i < password.length; i++) {
+        const slot = document.createElement('div');
+        slot.style.width = '35px';
+        slot.style.height = '35px';
+        slot.style.border = '3px dashed #e74c3c';
+        slot.style.borderRadius = '8px';
+        slot.style.display = 'flex';
+        slot.style.alignItems = 'center';
+        slot.style.justifyContent = 'center';
+        slot.style.background = 'white';
+        slot.style.margin = '2px';
+        slot.style.transition = 'all 0.3s';
+        slot.dataset.index = i;
+
+        slot.addEventListener('drop', handleDrop);
+        slot.addEventListener('dragover', handleDragOver);
+        slot.addEventListener('dragenter', handleDragEnter);
+        slot.addEventListener('dragleave', handleDragLeave);
+
+        passwordSlots.appendChild(slot);
+    }
+
+    const letters = password.split('').sort(() => Math.random() - 0.5);
+    letters.forEach((letter, index) => {
+        const letterDiv = document.createElement('div');
+        letterDiv.textContent = letter;
+        letterDiv.draggable = true;
+        letterDiv.className = 'letter-element';
+        letterDiv.style.display = 'inline-block';
+        letterDiv.style.margin = '5px';
+        letterDiv.style.padding = '12px';
+        letterDiv.style.background = crazyColors[Math.floor(Math.random() * crazyColors.length)];
+        letterDiv.style.color = 'white';
+        letterDiv.style.borderRadius = '8px';
+        letterDiv.style.cursor = 'move';
+        letterDiv.style.fontWeight = 'bold';
+        letterDiv.style.fontSize = '14px';
+        letterDiv.style.border = '2px solid #000';
+        letterDiv.style.animation = 'wiggle 2s infinite';
+        letterDiv.dataset.letter = letter;
+        letterDiv.dataset.originalIndex = index;
+
+        letterDiv.addEventListener('dragstart', handleDragStart);
+        letterDiv.addEventListener('dragend', handleDragEnd);
+        letterDiv.addEventListener('mouseenter', handleMouseEnter);
+        letterDiv.addEventListener('mouseleave', handleMouseLeave);
+
+        letterBank.appendChild(letterDiv);
+    });
+}
+
+function handleDragStart(ev) {
+    try {
+        currentDragElement = ev.target;
+        dragStarted = true;
+
+        ev.dataTransfer.setData("text/plain", ev.target.dataset.letter);
+        ev.dataTransfer.setData("text/html", ev.target.outerHTML);
+        ev.dataTransfer.effectAllowed = "move";
+
+        ev.target.classList.add('dragging');
+
+        showMiniPopup('ТАЩИМ! 🚀');
+    } catch (error) {
+        console.error('Ошибка dragstart:', error);
+        resetDragState();
+    }
+}
+
+function handleDragEnd(ev) {
+    try {
+
+        resetDragState();
+
+        ev.target.classList.remove('dragging');
+
+        document.body.style.cursor = 'default';
+        ev.target.style.cursor = 'move';
+
+        const slots = document.querySelectorAll('#password-slots div');
+        slots.forEach(slot => {
+            slot.classList.remove('drag-over');
+            if (!slot.textContent) {
+                slot.style.background = 'white';
+                slot.style.border = '3px dashed #e74c3c';
+                slot.style.transform = 'scale(1)';
+            }
+        });
+
+    } catch (error) {
+        console.error('Ошибка dragend:', error);
+        resetDragState();
+    }
+}
+
+function handleDragOver(ev) {
+    try {
+        ev.preventDefault();
+        ev.dataTransfer.dropEffect = "move";
+    } catch (error) {
+        console.error('Ошибка dragover:', error);
+    }
+}
+
+function handleDragEnter(ev) {
+    try {
+        ev.preventDefault();
+        if (dragStarted && !ev.target.textContent) {
+            ev.target.classList.add('drag-over');
+        }
+    } catch (error) {
+        console.error('Ошибка dragenter:', error);
+    }
+}
+
+function handleDragLeave(ev) {
+    try {
+        ev.target.classList.remove('drag-over');
+    } catch (error) {
+        console.error('Ошибка dragleave:', error);
+    }
+}
+
+function handleDrop(ev) {
+    try {
+        ev.preventDefault();
+
+        const letter = ev.dataTransfer.getData("text/plain");
+
+        if (letter && !ev.target.textContent && dragStarted) {
+            ev.target.textContent = letter;
+            ev.target.style.background = '#27ae60';
+            ev.target.style.color = 'white';
+            ev.target.style.border = '3px solid #2ecc71';
+            ev.target.style.animation = 'success-pulse 0.5s';
+            ev.target.classList.remove('drag-over');
+
+            if (currentDragElement && currentDragElement.parentNode) {
+                currentDragElement.parentNode.removeChild(currentDragElement);
+            }
+
+            showMiniPopup('ПОПАЛИ! 🎯');
+            checkPasswordCompletion();
+        }
+
+        resetDragState();
+
+    } catch (error) {
+        console.error('Ошибка drop:', error);
+        resetDragState();
+    }
+}
+
+function handleMouseEnter() {
+    if (!dragStarted) {
+        this.style.transform = 'scale(1.2) rotate(10deg)';
+        showMiniPopup('СХВАТИЛИ! 🎯');
+    }
+}
+
+function handleMouseLeave() {
+    if (!dragStarted) {
+        this.style.transform = 'scale(1) rotate(0deg)';
+    }
+}
+
+function resetDragState() {
+    currentDragElement = null;
+    dragStarted = false;
+    document.body.style.cursor = 'default';
+
+    const draggingElements = document.querySelectorAll('.dragging');
+    draggingElements.forEach(el => el.classList.remove('dragging'));
+
+    const dragOverElements = document.querySelectorAll('.drag-over');
+    dragOverElements.forEach(el => el.classList.remove('drag-over'));
+}
+
+document.addEventListener('dragend', function() {
+    setTimeout(resetDragState, 100);
+});
+
+document.addEventListener('keydown', function(ev) {
+    if (ev.key === 'Escape' && dragStarted) {
+        resetDragState();
+    }
+});
+
+function checkPasswordCompletion() {
+    const slots = document.querySelectorAll('#password-slots div');
+    let confirmedPassword = '';
+
+    slots.forEach(slot => {
+        confirmedPassword += slot.textContent;
+    });
+
+    if (confirmedPassword.length === document.getElementById('password').value.length) {
+        document.getElementById('confirm_password').value = confirmedPassword;
+        showAnnoyingPopup();
+        alert('ПАРОЛЬ СОБРАН! ВЫ МОЛОДЕЦ! 🎉');
+    }
+}
+
+let tetrisGame = {
+    canvas: null,
+    ctx: null,
+    running: false,
+    score: 0
+};
+
+document.getElementById('race-tetris').addEventListener('click', function() {
+    if (!tetrisGame.running) {
+        startTetrisGame();
+    }
+});
+
+function startTetrisGame() {
+    tetrisGame.running = true;
+    const container = document.getElementById('race-tetris');
+    container.innerHTML = `
+        <canvas id="tetris-canvas" width="280" height="180" style="background: #000; border: 2px solid #fff;"></canvas>
+        <div style="color: white; text-align: center; padding: 10px;">
+            <div id="tetris-score">Очки: 0</div>
+            <div style="font-size: 12px;">Нажимайте SPACE для поворота блоков!</div>
+        </div>
+    `;
+
+    tetrisGame.canvas = document.getElementById('tetris-canvas');
+    tetrisGame.ctx = tetrisGame.canvas.getContext('2d');
+
+    let gameInterval = setInterval(() => {
+        tetrisGame.score += 10;
+        document.getElementById('tetris-score').textContent = 'Очки: ' + tetrisGame.score;
+
+        tetrisGame.ctx.fillStyle = crazyColors[Math.floor(Math.random() * crazyColors.length)];
+        tetrisGame.ctx.fillRect(
+            Math.random() * 250,
+            Math.random() * 150,
+            20, 20
+        );
+
+        if (tetrisGame.score >= 100) {
+            clearInterval(gameInterval);
+            const raceSelect = document.getElementById('race_class');
+            for (let option of raceSelect.options) {
+                option.disabled = false;
+            }
+            showAnnoyingPopup();
+            alert('🎮 ТЕТРИС ПРОЙДЕН! Вы разблокировали выбор расы! 🎮');
+
+            tetrisGame.ctx.fillStyle = '#00ff00';
+            tetrisGame.ctx.fillRect(0, 0, 280, 180);
+            tetrisGame.ctx.fillStyle = '#000';
+            tetrisGame.ctx.font = '20px Arial';
+            tetrisGame.ctx.fillText('ПОБЕДА!', 100, 90);
+        }
+    }, 300);
+
+    document.addEventListener('keydown', function(e) {
+        if (e.code === 'Space' && tetrisGame.running) {
+            e.preventDefault();
+            showMiniPopup('ПОВОРОТ! 🔄');
+            tetrisGame.score += 5;
+        }
+    });
+}
+
+setInterval(function() {
+    if (Math.random() < 0.2) {
+        const submitBtn = document.getElementById('submit-btn');
+        if (submitBtn) {
+            const messages = [
+                '🚀 НЕ НАЖИМАЙТЕ! 🚀',
+                '🚀 ЗАВЕРШИТЬ МУЧЕНИЯ 🚀',
+                '🚀 КНОПКА-ЛОВУШКА! 🚀',
+                '🚀 ЭТО НЕ ТА КНОПКА! 🚀',
+                '🚀 ПОДУМАЙТЕ ЕЩЕ РАЗ! 🚀'
+            ];
+            submitBtn.textContent = messages[Math.floor(Math.random() * messages.length)];
+            submitBtn.style.background = crazyColors[Math.floor(Math.random() * crazyColors.length)];
+        }
+    }
+}, 2000);
+
+let timeLeft = 15 * 60;
+const timerInterval = setInterval(() => {
+    timeLeft--;
+
+    if (timeLeft % 60 === 0 && timeLeft > 0) {
+        const minutes = Math.floor(timeLeft / 60);
+        showAnnoyingPopup();
+        alert(`⏰ ОСТАЛОСЬ ${minutes} МИНУТ! ТОРОПИТЕСЬ! ⏰`);
+    }
+
+    if (timeLeft <= 0) {
+        clearInterval(timerInterval);
+        clearInterval(popupInterval);
+        clearInterval(colorInterval);
+        clearInterval(shakeInterval);
+        alert('⏰ ВРЕМЯ ВЫШЛО! Вы не достойны быть частью этого мира. 💀');
+        window.location.href = '/';
+    }
+}, 1000);
+</script>
+{% endblock %}
